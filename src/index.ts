@@ -7,7 +7,15 @@ import WebSocket from "ws";
 import { getAll, signIn, signUp, verifyEmail } from "./database/mongo";
 import { generateOTP, sendMail } from "./sendverification/send";
 import { authenticateToken, generateToken } from "./middleware";
+import { z } from "zod";
 
+const userDetailsSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  email: z.string().email("Invalid email format"),
+  phoneNumber: z.string().regex(/^[6-9]\d{9}$/, "Invalid mobile number format"),
+  password: z.string().min(6, "Password must be at least 6 characters long"),
+  imageUrl: z.instanceof(File).nullable(), // If imageUrl can be null, use nullable()
+});
 const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
@@ -19,6 +27,20 @@ app.use("/getimage", express.static(path.join(__dirname, "..", "uploads")));
 
 app.post("/signup", upload.single("image"), async (req, res) => {
   try {
+    const result = userDetailsSchema.safeParse({
+      name: req.body.name,
+      email: req.body.email,
+      phoneNumber: req.body.phoneNumber,
+      password: req.body.password,
+      imageUrl: req.file?.path
+        ? new File([req.file?.buffer], req.file?.originalname)
+        : null,
+    });
+
+    if (!result.success) {
+      const errors = result.error.format();
+      return res.status(400).send({ message: "Validation failed", errors });
+    }
     const data = req.body;
     if (req.file?.filename) {
       data.imageUrl = req.file.filename;

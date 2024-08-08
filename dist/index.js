@@ -21,6 +21,14 @@ const ws_1 = __importDefault(require("ws"));
 const mongo_1 = require("./database/mongo");
 const send_1 = require("./sendverification/send");
 const middleware_1 = require("./middleware");
+const zod_1 = require("zod");
+const userDetailsSchema = zod_1.z.object({
+    name: zod_1.z.string().min(1, "Name is required"),
+    email: zod_1.z.string().email("Invalid email format"),
+    phoneNumber: zod_1.z.string().regex(/^[6-9]\d{9}$/, "Invalid mobile number format"),
+    password: zod_1.z.string().min(6, "Password must be at least 6 characters long"),
+    imageUrl: zod_1.z.instanceof(File).nullable(), // If imageUrl can be null, use nullable()
+});
 const app = (0, express_1.default)();
 const server = http_1.default.createServer(app);
 const wss = new ws_1.default.Server({ server });
@@ -29,10 +37,23 @@ app.use((0, cors_1.default)());
 app.use(express_1.default.json());
 app.use("/getimage", express_1.default.static(path_1.default.join(__dirname, "..", "uploads")));
 app.post("/signup", upload.single("image"), (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
+    var _a, _b, _c, _d;
     try {
+        const result = userDetailsSchema.safeParse({
+            name: req.body.name,
+            email: req.body.email,
+            phoneNumber: req.body.phoneNumber,
+            password: req.body.password,
+            imageUrl: ((_a = req.file) === null || _a === void 0 ? void 0 : _a.path)
+                ? new File([(_b = req.file) === null || _b === void 0 ? void 0 : _b.buffer], (_c = req.file) === null || _c === void 0 ? void 0 : _c.originalname)
+                : null,
+        });
+        if (!result.success) {
+            const errors = result.error.format();
+            return res.status(400).send({ message: "Validation failed", errors });
+        }
         const data = req.body;
-        if ((_a = req.file) === null || _a === void 0 ? void 0 : _a.filename) {
+        if ((_d = req.file) === null || _d === void 0 ? void 0 : _d.filename) {
             data.imageUrl = req.file.filename;
         }
         const otp = (0, send_1.generateOTP)(4);
