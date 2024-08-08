@@ -1,5 +1,8 @@
 import nodemailer from "nodemailer";
 import twilio from "twilio";
+import dotenv from "dotenv";
+dotenv.config();
+
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
@@ -21,8 +24,8 @@ export async function sendMail(receivermail: string, otp: string) {
   return info;
 }
 
-const accountSid = "";
-const authToken = "";
+const accountSid = "ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
+const authToken = "your_auth_token";
 
 const client = twilio(accountSid, authToken);
 

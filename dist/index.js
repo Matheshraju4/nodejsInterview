@@ -16,10 +16,14 @@ const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const multer_1 = __importDefault(require("multer"));
 const path_1 = __importDefault(require("path"));
+const http_1 = __importDefault(require("http"));
+const ws_1 = __importDefault(require("ws"));
 const mongo_1 = require("./database/mongo");
 const send_1 = require("./sendverification/send");
 const middleware_1 = require("./middleware");
 const app = (0, express_1.default)();
+const server = http_1.default.createServer(app);
+const wss = new ws_1.default.Server({ server });
 const upload = (0, multer_1.default)({ dest: "uploads/" });
 app.use((0, cors_1.default)());
 app.use(express_1.default.json());
@@ -37,6 +41,18 @@ app.post("/signup", upload.single("image"), (req, res) => __awaiter(void 0, void
             const sendmail = yield (0, send_1.sendMail)(response.email, otp);
             console.log(sendmail);
         }
+        wss.clients.forEach((client) => {
+            if (client.readyState === ws_1.default.OPEN) {
+                client.send(JSON.stringify({
+                    type: "NEW_USER",
+                    user: {
+                        email: response.email,
+                        phoneNumber: response.phoneNumber,
+                        imageUrl: response.imageUrl,
+                    },
+                }));
+            }
+        });
         const { email, phoneNumber } = response;
         res.send({ message: "Otp has been Sent", email, phoneNumber });
     }
@@ -71,6 +87,18 @@ app.get("/all", middleware_1.authenticateToken, (req, res) => __awaiter(void 0, 
     });
     res.send(clientArray);
 }));
-app.listen(3000, () => {
-    console.log("listening On port 3000");
+wss.on("connection", (ws) => {
+    console.log("Client connected via WebSocket");
+    ws.on("message", (message) => {
+        console.log(`Received message: ${message}`);
+        ws.send(`Server received: ${message}`);
+    });
+    ws.on("close", () => {
+        console.log("Client disconnected from WebSocket");
+    });
+    ws.send("Welcome to the WebSocket server!");
+});
+const PORT = 3000;
+server.listen(PORT, () => {
+    console.log(`Server is listening on port ${PORT}`);
 });

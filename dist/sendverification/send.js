@@ -17,11 +17,13 @@ exports.sendOtp = sendOtp;
 exports.generateOTP = generateOTP;
 const nodemailer_1 = __importDefault(require("nodemailer"));
 const twilio_1 = __importDefault(require("twilio"));
+const dotenv_1 = __importDefault(require("dotenv"));
+dotenv_1.default.config();
 const transporter = nodemailer_1.default.createTransport({
     service: "gmail",
     auth: {
-        user: "matheshrajudev@gmail.com",
-        pass: "wkaj noad olta stia",
+        user: process.env.NODE_MAIL_EMAIL,
+        pass: process.env.NODE_MAIL_PASSWORD,
     },
 });
 function sendMail(receivermail, otp) {

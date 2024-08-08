@@ -6,7 +6,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.generateToken = generateToken;
 exports.authenticateToken = authenticateToken;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
-const secretKey = "your_secret_key"; // Replace with your actual secret key
+const dotenv_1 = __importDefault(require("dotenv"));
+dotenv_1.default.config();
+const secretKey = process.env.SECRET_KEY;
 function generateToken(email) {
     const payload = {
         email,
